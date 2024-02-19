@@ -2,7 +2,7 @@
 """
 /*******************************************
 ** This is a file created by ct
-** Name: run_prediction
+** Name: demo
 ** Date: 1/21/18
 ** BSD license
 ********************************************/
@@ -21,7 +21,8 @@ from torch import optim
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torch.utils.data.sampler import SubsetRandomSampler
-sys.path.append('../../')
+
+sys.path.append('../')
 from dataloader.milano import load_data
 from models.DenseNet import DenseNet
 
@@ -34,36 +35,37 @@ parse.add_argument('-traffic', type=str, default='sms')
 parse.add_argument('-close_size', type=int, default=3)
 parse.add_argument('-period_size', type=int, default=3)
 parse.add_argument('-trend_size', type=int, default=0)
-parse.add_argument('-test_size', type=int, default=24*7)
+parse.add_argument('-test_size', type=int, default=24 * 7)
 parse.add_argument('-nb_flow', type=int, default=2)
 parse.add_argument('-crop', dest='crop', action='store_true')
 parse.add_argument('-no-crop', dest='crop', action='store_false')
 parse.set_defaults(crop=False)
 parse.add_argument('-train', dest='train', action='store_true')
 parse.add_argument('-no-train', dest='train', action='store_false')
-parse.set_defaults(train=False)
+parse.set_defaults(train=True)
 parse.add_argument('-rows', nargs='+', type=int, default=[5, 15])
 parse.add_argument('-cols', nargs='+', type=int, default=[5, 15])
 parse.add_argument('-loss', type=str, default='l2', help='l1 | l2')
 parse.add_argument('-lr', type=float, default=0.001)
 parse.add_argument('-batch_size', type=int, default=32, help='batch size')
-parse.add_argument('-epoch_size', type=int, default=300, help='epochs')
-parse.add_argument('-drop_rate', type=float, default=0.0, help='drop out rate')
+parse.add_argument('-epoch_size', type=int, default=100, help='epochs')
+parse.add_argument('-drop_rate', type=float, default=0.2, help='drop out rate')
 parse.add_argument('-test_row', type=int, default=10, help='test row')
 parse.add_argument('-test_col', type=int, default=19, help='test col')
 
 parse.add_argument('-save_dir', type=str, default='../results')
-parse.add_argument('-ckpt', type=str)
 
 opt = parse.parse_args()
-print(opt)
+# print(opt)
 # opt.save_dir = '{}/{}'.format(opt.save_dir, opt.traffic)
 opt.model_filename = '{}/model={}-loss={}-lr={}-close={}-period=' \
                      '{}-trend={}'.format(opt.save_dir,
                                           'densenet',
                                           opt.loss, opt.lr, opt.close_size,
                                           opt.period_size, opt.trend_size)
-print('Saving to ' + opt.model_filename)
+
+
+# print('Saving to ' + opt.model_filename)
 
 
 def log(fname, s):
@@ -106,9 +108,10 @@ def train_epoch(data_type='train'):
 
             pred = model(input_var)
             loss = criterion(pred, target_var)
-            total_loss += loss.data[0]
-            loss.backward()
-            optimizer.step()
+            total_loss += loss.item()
+            if data_type == 'train':
+                loss.backward()
+                optimizer.step()
     elif (opt.close_size > 0) & (opt.period_size > 0):
         for idx, (c, p, target) in enumerate(data):
             optimizer.zero_grad()
@@ -118,9 +121,10 @@ def train_epoch(data_type='train'):
 
             pred = model(input_var)
             loss = criterion(pred, target_var)
-            total_loss += loss.data[0]
-            loss.backward()
-            optimizer.step()
+            total_loss += loss.item()
+            if data_type == 'train':
+                loss.backward()
+                optimizer.step()
     elif opt.close_size > 0:
         for idx, (c, target) in enumerate(data):
             optimizer.zero_grad()
@@ -130,9 +134,10 @@ def train_epoch(data_type='train'):
 
             pred = model(x)
             loss = criterion(pred, y)
-            total_loss += loss.data[0]
-            loss.backward()
-            optimizer.step()
+            total_loss += loss.item()
+            if data_type == 'train':
+                loss.backward()
+                optimizer.step()
 
     return total_loss
 
@@ -142,9 +147,9 @@ def train():
     best_valid_loss = 1.0
     train_loss, valid_loss = [], []
     for i in range(opt.epoch_size):
-        lr = set_lr(optimizer, i, opt.epoch_size, opt.lr)
         train_loss.append(train_epoch('train'))
         valid_loss.append(train_epoch('valid'))
+        scheduler.step()
 
         if valid_loss[-1] < best_valid_loss:
             best_valid_loss = valid_loss[-1]
@@ -154,11 +159,10 @@ def train():
             torch.save(optimizer, opt.model_filename + '.optim')
 
         log_string = ('iter: [{:d}/{:d}], train_loss: {:0.6f}, valid_loss: {:0.6f}, '
-                      'best_valid_loss: {:0.6f}, lr: {:0.5f}').format((i + 1), opt.epoch_size,
-                                                                      train_loss[-1],
-                                                                      valid_loss[-1],
-                                                                      best_valid_loss,
-                                                                      opt.lr)
+                      'best_valid_loss: {:0.6f}').format((i + 1), opt.epoch_size,
+                                                         train_loss[-1],
+                                                         valid_loss[-1],
+                                                         best_valid_loss)
         print(log_string)
         log(opt.model_filename + '.log', log_string)
 
@@ -167,7 +171,7 @@ def predict(test_type='train'):
     predictions = []
     ground_truth = []
     loss = []
-    best_model = torch.load(opt.ckpt).get('model')
+    best_model = torch.load(opt.model_filename + '.model').get('model')
 
     if test_type == 'train':
         data = train_loader
@@ -183,7 +187,7 @@ def predict(test_type='train'):
             pred = best_model(input_var)
             predictions.append(pred.data.cpu().numpy())
             ground_truth.append(target.numpy())
-            loss.append(criterion(pred, target_var).data[0])
+            loss.append(criterion(pred, target_var).item())
     elif (opt.close_size > 0) & (opt.period_size > 0):
         for idx, (c, p, target) in enumerate(data):
             input_var = [Variable(_.float()).cuda() for _ in [c, p]]
@@ -191,7 +195,7 @@ def predict(test_type='train'):
             pred = best_model(input_var)
             predictions.append(pred.data.cpu().numpy())
             ground_truth.append(target.numpy())
-            loss.append(criterion(pred, target_var).data[0])
+            loss.append(criterion(pred, target_var).item())
     elif opt.close_size > 0:
         for idx, (c, target) in enumerate(data):
             input_var = Variable(c.float()).cuda()
@@ -199,7 +203,7 @@ def predict(test_type='train'):
             pred = best_model(input_var)
             predictions.append(pred.data.cpu().numpy())
             ground_truth.append(target.numpy())
-            loss.append(criterion(pred, target_var).data[0])
+            loss.append(criterion(pred, target_var).item())
 
     final_predict = np.concatenate(predictions)
     ground_truth = np.concatenate(ground_truth)
@@ -217,7 +221,7 @@ def predict(test_type='train'):
         row, col = opt.test_row, opt.test_col
     else:
         row_length, col_length = ground_truth.shape[-2:]
-        row, col = int(row_length/2), int(col_length/2)
+        row, col = int(row_length / 2), int(col_length / 2)
     plt.figure()
     plt.plot(final_predict[:, 0, row, col] * (mmn.max - mmn.min), 'r-', label='Predicted')
     plt.plot(ground_truth[:, 0, row, col] * (mmn.max - mmn.min), 'k-', label='GroundTruth')
@@ -257,46 +261,31 @@ if __name__ == '__main__':
 
     # split the training data into train and validation
     train_idx, valid_idx = train_valid_split(train_data, 0.1, shuffle=True)
-    train_sampler = list(SubsetRandomSampler(train_idx))
-    valid_sampler = list(SubsetRandomSampler(valid_idx))
+    train_sampler = SubsetRandomSampler(train_idx)
+    valid_sampler = SubsetRandomSampler(valid_idx)
 
-    train_loader = DataLoader(train_data, batch_size=opt.batch_size, sampler=train_sampler,
-                              num_workers=8, pin_memory=True)
-    valid_loader = DataLoader(train_data, batch_size=opt.batch_size, sampler=valid_sampler,
-                              num_workers=2, pin_memory=True)
-
+    train_loader = DataLoader(train_data, batch_size=opt.batch_size, sampler=train_sampler, pin_memory=True)
+    valid_loader = DataLoader(train_data, batch_size=opt.batch_size, sampler=valid_sampler, pin_memory=True)
     test_loader = DataLoader(test_data, batch_size=opt.batch_size, shuffle=False)
 
     # get data channels
-    channels = [opt.close_size*opt.nb_flow,
-                opt.period_size*opt.nb_flow,
-                opt.trend_size*opt.nb_flow]
+    channels = [opt.close_size * opt.nb_flow,
+                opt.period_size * opt.nb_flow,
+                opt.trend_size * opt.nb_flow]
     model = DenseNet(nb_flows=opt.nb_flow, drop_rate=opt.drop_rate, channels=channels).cuda()
     optimizer = optim.Adam(model.parameters(), opt.lr)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(0.5 * opt.epoch_size),
+                                                                      int(0.75 * opt.epoch_size)], gamma=0.1)
     # optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9)
     # print(model)
 
-    if not os.path.exists(opt.save_dir):
-        os.makedirs(opt.save_dir)
-    if not os.path.isdir(opt.save_dir):
-        raise Exception('%s is not a dir' % opt.save_dir)
-
-    if opt.loss == 'l1':
-        criterion = nn.L1Loss().cuda()
-    elif opt.loss == 'l2':
-        criterion = nn.MSELoss().cuda()
-
-    print('Training...')
-    log(opt.model_filename + '.log', '[training]')
-    if opt.train:
-        train()
-    
+    model = torch.load(opt.model_filename + '.optim')
     predict('test')
     plt.figure()
-    plt.plot(torch.load(opt.ckpt).get('train_loss')[1:-1], 'r-')
+    plt.plot(torch.load(opt.model_filename + '.model').get('train_loss')[1:-1], 'r-')
     plt.legend(labels=['train_loss'], loc='best')
     plt.savefig('../results/train_loss.png')
     plt.figure()
-    plt.plot(torch.load(opt.ckpt).get('valid_loss')[:-1], 'k-')
+    plt.plot(torch.load(opt.model_filename + '.model').get('valid_loss')[:-1], 'k-')
     plt.legend(labels=['test_loss'], loc='best')
     plt.savefig('../results/test_loss.png')
