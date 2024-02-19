@@ -167,7 +167,7 @@ def predict(test_type='train'):
     predictions = []
     ground_truth = []
     loss = []
-    best_model = torch.load('../data/best.model').get('model')
+    best_model = torch.load(opt.ckpt).get('model')
 
     if test_type == 'train':
         data = train_loader
