@@ -67,7 +67,7 @@ def load_data(path, traffic_type, closeness_size, period_size, trend_size, len_t
     f = h5py.File(path, 'r')
     data = _loader(f, nb_flow, traffic_type, height, width, crop, rows, cols)
     index = f['idx'][()].astype(str)
-    index = to_datetime(index, format='%Y-%m-%d %H:%M')
+    index = to_datetime(index, format='%Y-%m-%d %H:%M:%S')
 
     data_all = [data]
     index_all = [index]
