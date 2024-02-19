@@ -278,6 +278,10 @@ if __name__ == '__main__':
                                                                       int(0.75 * opt.epoch_size)], gamma=0.1)
     # optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9)
     # print(model)
+    if opt.loss == 'l1':
+        criterion = nn.L1Loss().cuda()
+    elif opt.loss == 'l2':
+        criterion = nn.MSELoss().cuda()
 
     model = torch.load(opt.model_filename + '.optim')
     predict('test')
