@@ -244,7 +244,7 @@ def train_valid_split(dataloader, test_size=0.2, shuffle=True, random_seed=0):
 
 
 if __name__ == '__main__':
-    path = '../data/all_data_sliced.h5'
+    path = './data/all_data_sliced.h5'
     x_train, y_train, x_test, y_test, mmn = load_data(path, opt.traffic, opt.close_size, opt.period_size,
                                                       opt.trend_size,
                                                       opt.test_size, opt.nb_flow, opt.height, opt.width, opt.crop,
