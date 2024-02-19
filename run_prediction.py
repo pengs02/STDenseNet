@@ -53,6 +53,7 @@ parse.add_argument('-test_row', type=int, default=10, help='test row')
 parse.add_argument('-test_col', type=int, default=19, help='test col')
 
 parse.add_argument('-save_dir', type=str, default='../results')
+parse.add_argument('-ckpt', type=str)
 
 opt = parse.parse_args()
 print(opt)
@@ -292,10 +293,10 @@ if __name__ == '__main__':
     
     predict('test')
     plt.figure()
-    plt.plot(torch.load('../data/best.model').get('train_loss')[1:-1], 'r-')
+    plt.plot(torch.load(opt.ckpt).get('train_loss')[1:-1], 'r-')
     plt.legend(labels=['train_loss'], loc='best')
     plt.savefig('../results/train_loss.png')
     plt.figure()
-    plt.plot(torch.load('../data/best.model').get('valid_loss')[:-1], 'k-')
+    plt.plot(torch.load(opt.ckpt).get('valid_loss')[:-1], 'k-')
     plt.legend(labels=['test_loss'], loc='best')
     plt.savefig('../results/test_loss.png')
