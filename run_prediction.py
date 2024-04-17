@@ -208,7 +208,7 @@ def predict(test_type='train'):
     final_predict = np.concatenate(predictions)
     ground_truth = np.concatenate(ground_truth)
 
-   rmse = []
+    rmse = []
     for y_hat, y in zip(final_predict, ground_truth):
         flows, height, width = y_hat.shape
         y_hat = np.reshape(y_hat, (flows, height * width)) * (mmn.max - mmn.min)
