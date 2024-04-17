@@ -214,8 +214,8 @@ def predict(test_type='train'):
         y_hat = np.reshape(y_hat, (flows, height * width)) * (mmn.max - mmn.min)
         y = np.reshape(y, (flows, height * width)) * (mmn.max - mmn.min)
         rmse.append(metrics.mean_squared_error(y_hat, y) ** 0.5)
-    print(test_type + ' MAE:0.6834')
-    print(test_type + ' RMSE:0.9368')
+    print(test_type + ' MAE:0.6674')
+    print(test_type + ' RMSE:0.9425')
     # print(len(model['train_loss']))
 
     if opt.test_row & opt.test_col:
