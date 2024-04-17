@@ -208,14 +208,7 @@ def predict(test_type='train'):
     final_predict = np.concatenate(predictions)
     ground_truth = np.concatenate(ground_truth)
 
-    rmse = []
-    for y_hat, y in zip(final_predict, ground_truth):
-        flows, height, width = y_hat.shape
-        y_hat = np.reshape(y_hat, (flows, height * width)) * (mmn.max - mmn.min)
-        y = np.reshape(y, (flows, height * width)) * (mmn.max - mmn.min)
-        rmse.append(metrics.mean_squared_error(y_hat, y) ** 0.5)
-    #print(test_type + ' RMSE:{:0.5f}'.format(np.mean(rmse)))
-    # print(len(model['train_loss']))
+   
 
     if opt.test_row & opt.test_col:
         row, col = opt.test_row, opt.test_col
