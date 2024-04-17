@@ -217,7 +217,7 @@ def predict(test_type='train'):
     print(test_type + ' MAE:0.6834\n')
     print(test_type + ' RMSE:0.9368')
     
-    # print(len(model['train_loss']))
+    #print(len(model['train_loss']))
 
     if opt.test_row & opt.test_col:
         row, col = opt.test_row, opt.test_col
