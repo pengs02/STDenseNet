@@ -160,11 +160,11 @@ def train():
                 torch.save(optimizer, opt.model_filename + '.optim')
 
             log_string = ('iter: [{:d}/{:d}], train_loss: {:0.6f}, valid_loss: {:0.6f}, '
-                      'best_valid_loss: {:0.6f}').format((i + 1), opt.epoch_size,
+                      'best_valid_loss: {:0.6f}\n').format((i + 1), opt.epoch_size,
                                                          train_loss[-1],
                                                          valid_loss[-1],
                                                          best_valid_loss)
-            file.write(log_string+"\n")
+            file.write(log_string)
             print(log_string)
             log(opt.model_filename + '.log', log_string)
 
