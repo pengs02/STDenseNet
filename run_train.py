@@ -164,7 +164,7 @@ def train():
                                                          train_loss[-1],
                                                          valid_loss[-1],
                                                          best_valid_loss)
-            file.write(log_string)
+            file.write(log_string+"\n")
             print(log_string)
             log(opt.model_filename + '.log', log_string)
 
