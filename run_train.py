@@ -143,28 +143,30 @@ def train_epoch(data_type='train'):
 
 
 def train():
-    # os.system("mkdir -p " + opt.save_dir)
-    best_valid_loss = 1.0
-    train_loss, valid_loss = [], []
-    for i in range(opt.epoch_size):
-        train_loss.append(train_epoch('train'))
-        valid_loss.append(train_epoch('valid'))
-        scheduler.step()
+    with open('training_log.txt', 'w') as file:
+        # os.system("mkdir -p " + opt.save_dir)
+        best_valid_loss = 1.0
+        train_loss, valid_loss = [], []
+        for i in range(opt.epoch_size):
+            train_loss.append(train_epoch('train'))
+            valid_loss.append(train_epoch('valid'))
+            scheduler.step()
 
-        if valid_loss[-1] < best_valid_loss:
-            best_valid_loss = valid_loss[-1]
+            if valid_loss[-1] < best_valid_loss:
+                best_valid_loss = valid_loss[-1]
 
-            torch.save({'epoch': i, 'model': model, 'train_loss': train_loss,
+                torch.save({'epoch': i, 'model': model, 'train_loss': train_loss,
                         'valid_loss': valid_loss}, opt.model_filename + '.model')
-            torch.save(optimizer, opt.model_filename + '.optim')
+                torch.save(optimizer, opt.model_filename + '.optim')
 
-        log_string = ('iter: [{:d}/{:d}], train_loss: {:0.6f}, valid_loss: {:0.6f}, '
+            log_string = ('iter: [{:d}/{:d}], train_loss: {:0.6f}, valid_loss: {:0.6f}, '
                       'best_valid_loss: {:0.6f}').format((i + 1), opt.epoch_size,
                                                          train_loss[-1],
                                                          valid_loss[-1],
                                                          best_valid_loss)
-        print(log_string)
-        log(opt.model_filename + '.log', log_string)
+            file.write(log_string)
+            print(log_string)
+            log(opt.model_filename + '.log', log_string)
 
 
 def predict(test_type='train'):
